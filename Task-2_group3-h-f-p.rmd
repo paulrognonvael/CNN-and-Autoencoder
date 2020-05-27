@@ -34,14 +34,14 @@ library(tfruns)
 library(kableExtra)
 library(caret)
 library(plyr)
-library(xgboost)
+library(gbm)
 
 # set seed for reproductibility
 set.seed(42)
 tensorflow::tf$random$set_seed(42)
 
 #load saved data
-load("data_q1to6.RData")
+load("data_q1to8.RData")
 ```
 
 ### Question 1&2 Normalize images. Split the dataset into 500 train /100 validation /100 test. Try to balance the two classes.
@@ -310,7 +310,7 @@ tfruns_res_batchsize %>% select(c(6,2,3,4,5)) %>% kable(
 )
 ```
 
-We set our batch size at `r best_batch` and refit our model with that size.
+We set our batch size at `r best_batch`, refit our model with that size and save our tuned model in the attached file `cnn_model_bestbatch.h5`.
 
 ```{r,echo =TRUE}
 set.seed(43)
@@ -388,7 +388,7 @@ confusionMatrix(as.factor(stat_df$predicted_class),as.factor(stat_df$class))
 
 ### Question 6 & 7. Re-fit the CNN including data augmentation. Was the use of augmentation an improvement? Compare these two CNN models.
 
-We use `image_data_generator` to augment the training set of images and fit our model again with all the hyperparameters equal to our model without augmentation and the same seed.
+We use `image_data_generator` to augment the training set of images and fit our model again with all the hyperparameters equal to our model without augmentation and the same seed. We save our augmented model in the attached file `cnn_model_bestbatch_augmented.h5`.
 
 ```{r,echo =TRUE}
 datagen <- image_data_generator(
@@ -493,7 +493,10 @@ save.image("data_q1to6.RData")
 
 ### Question 8. Implement a convolutional autoencoder (CAE) network
 
-```{r,eval=TRUE}
+We use `image_data_generator`to normalize our data and `flow_images_from_directory` to split our images in batches of size 50 with mode `input`.
+
+```{r,echo=FALSE}
+b_size <- 50
 train_datagen <- image_data_generator(rescale = 1/255)
 train_generator <- flow_images_from_directory(
   train_dir,
@@ -515,58 +518,44 @@ validation_generator <- flow_images_from_directory(
 )
 ```
 
+We define a convolutionnal autoencoder with 3 convolutionnal layers in the encoder and 4 convolutionnal layers in the decoder. The number of filters is a decresing function of the layer order in the encoder and we start from 64 filters. The pooling size is set at 2 in the two first layers and then 4 in the third one. The decoder structure is symetric to the encoder one, with an additional layer to obtain an image of the same dimension as the input. The total number of trainable parameters is 53,889.
 
-```{r,eval=TRUE}
+```{r,echo=TRUE, eval = TRUE}
 #### Convolutional Encoder 
+filters_start <- 64
+p_size <- 4
 
 model_enc <- keras_model_sequential() 
 model_enc %>%
-  layer_conv_2d(filters = 32, kernel_size = c(3,3), padding ="same",
+  layer_conv_2d(filters = filters_start, kernel_size = c(2,2), padding ="same",
                 activation = "relu",input_shape = c(64, 64, 1)) %>%
-  layer_max_pooling_2d(pool_size = c(2, 2),padding ="same") %>%
+  layer_max_pooling_2d(pool_size = c(2,2),padding ="same") %>%
 
-  layer_conv_2d(filters = 32, kernel_size = c(3, 3), padding ="same",
+  layer_conv_2d(filters = filters_start, kernel_size = c(2,2), padding ="same",
                 activation = "relu") %>%
-  layer_max_pooling_2d(pool_size = c(2, 2),padding ="same") %>% 
+  layer_max_pooling_2d(pool_size = c(2,2),padding ="same") %>% 
   
-  layer_conv_2d(filters = 16, kernel_size = c(3, 3), padding ="same",
+  layer_conv_2d(filters = filters_start/2, kernel_size = c(2,2), padding ="same",
                 activation = "relu") %>%
-  layer_max_pooling_2d(pool_size = c(2, 2), padding ="same") %>% 
-  
-  layer_conv_2d(filters = 16, kernel_size = c(3, 3), padding ="same",
-                activation = "relu") %>%
-  layer_max_pooling_2d(pool_size = c(2, 2), padding ="same") %>% 
-    layer_conv_2d(filters = 8, kernel_size = c(3, 3), padding ="same",
-                activation = "relu") %>%
-  layer_max_pooling_2d(pool_size = c(2, 2), padding ="same")
-  
-
+  layer_max_pooling_2d(pool_size = c(p_size,p_size), padding ="same")
 summary(model_enc)
 
 #### Convolutional Decoder 
 
 model_dec <- keras_model_sequential() 
 model_dec %>%
-  layer_conv_2d(filters = 8, kernel_size = c(3,3), 
+  layer_conv_2d(filters = filters_start/2, kernel_size = c(3,3), 
                 activation = "relu", padding = "same",
-                input_shape = c(2, 2, 8))  %>%
+                input_shape = c(64/(2*2*p_size), 64/(2*2*p_size), filters_start/2))  %>%
   layer_upsampling_2d(size = c(2,2))  %>%
   
-  layer_conv_2d(filters = 16, kernel_size = c(3,3), 
+layer_conv_2d(filters = filters_start, kernel_size = c(3,3), 
                 activation = "relu", padding = "same")  %>%
   layer_upsampling_2d(size = c(2,2))  %>%
   
-  layer_conv_2d(filters = 16, kernel_size = c(3,3), 
+  layer_conv_2d(filters = filters_start, kernel_size = c(3,3), 
                 activation = "relu", padding = "same")  %>%
-  layer_upsampling_2d(size = c(2,2))  %>%
-  
-layer_conv_2d(filters = 32, kernel_size = c(3,3), 
-                activation = "relu", padding = "same")  %>%
-  layer_upsampling_2d(size = c(2,2))  %>%
-  
-  layer_conv_2d(filters = 32, kernel_size = c(3,3), 
-                activation = "relu", padding = "same")  %>%
-  layer_upsampling_2d(size = c(2,2))  %>%
+  layer_upsampling_2d(size = c(p_size,p_size))  %>%
   layer_conv_2d(filters = 1, kernel_size = c(1,1), 
                 activation = "relu")  
 summary(model_dec)
@@ -576,8 +565,12 @@ model_auto<-keras_model_sequential()
 model_auto %>%model_enc%>%model_dec
 ```
 
-```{r,eval=TRUE}
-b_size <- 25
+We use the mean squared error as loss function and 5 epochs.
+
+```{r,echo=TRUE}
+# set seed for reproductibility
+set.seed(42)
+tensorflow::tf$random$set_seed(42)
 
 model_auto %>% compile(
   loss = "mean_squared_error",
@@ -598,83 +591,83 @@ model_auto %>% save_model_hdf5("auto_model.h5")
 save.image("data_q1to8.RData")
 ```
 
+We see that after 5 epochs, the training and validation metrics are similar and stagnate. More epochs would lead to overfitting.
+
 ```{r,eval=TRUE,fig.cap="\\label{fig:fig3} Autoencoder MSE on training and validation set",out.extra = "", fig.pos = 'h!', fig.align="center"}
 plot(history_auto)
 ```
 
 
-```{r,eval=FALSE}
-train_datagen <- image_data_generator(rescale = 1/255)
-train_generator <- flow_images_from_directory(
-  train_dir,
-  train_datagen,
-  color_mode = "grayscale",
-  target_size = c(64, 64),
-  batch_size = b_size,
-  class_mode = "input"
-)
+### Question 9. Tune the more compact layer (z layer) with three configurations(width x heigth x filters) what you can free choose. To evaluate the z layer performance use this flattened layer as input in a random forest(or boosting) algorithm to classify the images.
 
-test_datagen <- image_data_generator(rescale = 1/255)
-test_generator <- flow_images_from_directory(
-  test_dir,
-  test_datagen,
-  color_mode = "grayscale",
-  target_size = c(64, 64),
-  batch_size = b_size,
-  class_mode = "input",
-  shuffle = FALSE
-)
+We use `tfruns` to run our convolutionnal autoencoder with different configurations of the encoder to obtain three different dimensions of the compact layer Z: (4,4,32), (4,4,64) and (8,8,64).
 
-# From input to encoder - training
-predict_enc_train <- model_enc %>% predict_generator(
-  train_generator,
-  steps = 500/b_size)
-dim(predict_enc_train)
-
-# From input to encoder - test
-predict_enc_test <- model_enc %>% predict_generator(
-  test_generator,
-  steps = 100/b_size)
-dim(predict_enc_test)
-
-# flat file 
-dim(predict_enc_train) <- c(nrow(predict_enc_train),prod(dim(predict_enc_train)[-1]))
-dim(predict_enc_test) <- c(nrow(predict_enc_test),prod(dim(predict_enc_test)[-1]))
-
-# Flatten array 
-y_radio_train <- train_generator$classes
-y_radio_test <- stat_df_bestbatch_aug$class
-save(predict_enc_train,y_radio_train,predict_enc_test, y_radio, file=paste0("Conv_Encod_Flat_.RData"))
+```{r,echo=TRUE}
+training_run("cae_flags.R", flags = c(filters_nb_start = 64,
+                                      pooling_size = 4))
+training_run("cae_flags.R", flags = c(filters_nb_start = 128,
+                                      pooling_size = 4))
+training_run("cae_flags.R", flags = c(filters_nb_start = 128,
+                                      pooling_size = 2))
+tuning_res_dim <- tfruns::ls_runs() %>% filter(script == "cae_flags.R")
+write_csv(tuning_res_dim,"tfruns_res_dim.csv")
 ```
 
+On the training and validation set, the compact layer Z of dimension (8,8,64) gives the lowest MSE.
+
+```{r,eval=TRUE}
+tfruns_res_dim <- read_csv("tfruns_res_dim.csv")
+dimension <- c("(8,8,64)","(4,4,64)","(4,4,32)")
+tfruns_res_dim %>% mutate(dimen = dimension) %>% select(c(27,8,9,2,3,4,5)) %>% kable(
+  digits = 3,
+  col.names = c("Dimension Z","Filter param","Pooling size", "Train. loss", "Val. loss","Train. MSE.","Val. MSE"),
+  align = "c",
+  caption = "\\label{tab:tab2} Z dimension tuning results - loss and MSE"
+)
+```
+
+In the runs, we extracted and flattened the compact layer Z for each dimension for the training and the test sets and saved it in Rdata files. We fit an adaboost model with stumps on the training Z for each combination. For computation time and power, we run the code in Google Colab virtual machine with the attached notebook `Adaboost on encoder output.ipynb`.
+
 ```{r,eval=FALSE}
-load("Conv_Encod_Flat_.RData")
+combina <-c("filter128_pool2","filter128_pool4","filter64_pool4")
+for (com in combina){
+  load(paste0("Conv_Encod_Flat_",com,".RData"))
+  training <- data.frame(y=as.factor(y_radio_train),predict_enc_train)
+  nzv <- nearZeroVar(training)
+  training <- training[, -nzv]
+  #test <- data.frame(y=as.factor(y_radio_test),predict_enc_test)
+  training$y <- revalue(training$y, c("0"="effusion", "1"="normal"))
+  #test$y <- revalue(test$y, c("0"="effusion", "1"="normal"))
 
-training <- data.frame(y=as.factor(y_radio_train),predict_enc_train)
-test <- data.frame(y=as.factor(y_radio_test),predict_enc_test)
-training$y <- revalue(training$y, c("0"="effusion", "1"="normal"))
-test$y <- revalue(test$y, c("0"="effusion", "1"="normal"))
+  control <- trainControl(
+    method = "repeatedcv",
+    number = 5,
+    repeats = 3,
+    classProbs = TRUE
+  )
 
-control <- trainControl(
-  method = "repeatedcv",
-  number = 5,
-  repeats = 3,
-  classProbs = TRUE
-)
+  grid <- expand.grid(
+    .interaction.depth = 1,
+    .n.trees = c(500, 1500, 3000),
+    .shrinkage = .01,
+    .n.minobsinnode = 10
+  )
 
-metric <- "Accuracy"
+  metric <- "Accuracy"
 
-xgboost <- train(y ~ .,
-  data = training,
-  method = "xgbTree",
-  trControl = control,
-  verbose = FALSE,
-  metric = metric,
-)
+  stump_adaboost <- train(y ~ .,
+    data = training,
+    method = "gbm",
+    bag.fraction = 0.5,
+    distribution = "adaboost",
+    trControl = control,
+    tuneGrid = grid,
+    verbose = FALSE,
+    metric = metric
+  )
 
-plot(xgboost)
-
-save(xgboost, file = "xgboost_model.Rdata")
+  save(stump_adaboost,file=paste0("stump_adaboost",com,".Rdata"))
+}
 ```
 
 ```{r}
