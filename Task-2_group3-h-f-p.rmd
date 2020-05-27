@@ -1,0 +1,683 @@
+---
+title: "Task 2 Statistical Learning 2020"
+author: "Group 3"
+date: '`r format(Sys.Date(),"%B %eth, %Y")`'
+output:
+  # pdf_document:
+  #   number_sections: yes
+  #   toc: yes
+  #   includes:  
+  #     in_header: my_header.tex
+  html_document:
+    df_print: paged
+    toc: yes
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE, warning = FALSE, error = FALSE, message = FALSE,eval = FALSE,
+  tidy.opts = list(width.cutoff = 55)
+)
+```
+
+
+```{r,echo=TRUE,eval=TRUE}
+# libraries
+library(keras)
+library(tidyverse)
+library(caret)
+library(ggplot2)
+library(gridExtra)
+library(tfruns)
+library(kableExtra)
+library(caret)
+library(plyr)
+library(xgboost)
+
+# set seed for reproductibility
+set.seed(42)
+tensorflow::tf$random$set_seed(42)
+
+#load saved data
+load("data_q1to6.RData")
+```
+
+### Question 1&2 Normalize images. Split the dataset into 500 train /100 validation /100 test. Try to balance the two classes.
+
+We create a function to automatically split the data in the required folder structure or depending on the user requirements.
+
+```{r}
+random_files <- function(readpath, writepath, type, train_size, val_size, test_size, pattern = "png$|PNG$"){
+####################################################################
+# readpath and writepath = path to folders with files to select and where to write them                                
+#                                                                            
+# train_size, val_size, test_size = percentage or number of recordings to select. If value is 
+#   between 0 and 1 percentage of files is assumed, if value greater than 1, 
+#   number of files is assumed                                               
+#                                                                            
+# pattern = file extension to select.       
+# type = normal(1) or effusion(2) types   
+####################################################################
+      
+      #### copy original data in temp folder for separation 
+      temp_path = file.path(writepath, 'temp')
+      dir.create(temp_path)
+      file.copy(readpath, temp_path, recursive=TRUE)
+      if (type == 1){
+        temp_type_path = file.path(temp_path, 'normal')
+      }else if(type == 2){
+        temp_type_path = file.path(temp_path, 'effusion')
+      }else {print("Incorrect type")}
+      
+      # Get file list with full path and file names
+      files <- list.files(temp_type_path, full.names = TRUE, pattern = pattern)
+      file_names <- list.files(temp_type_path, pattern = pattern)
+      
+      # Select the desired % or number of file by simple random sampling 
+      randomize <- sample(seq(files))
+      files2analyse <- files[randomize]
+      names2analyse <- file_names[randomize]
+      if(train_size <= 1){
+        size <- floor(train_size * length(files))
+      }else{
+        size <- train_size
+      }
+      files2analyse <- files2analyse[(1:size)]
+      names2analyse <- names2analyse[(1:size)]
+    
+      ##### training
+    
+      # Create folder to output
+      if (type == 1){
+        results_folder <- paste0(writepath, '/train/normal')
+      }else if(type == 2){
+        results_folder <- paste0(writepath, '/train/effusion')
+      }else {print("Incorrect type")}
+      dir.create(results_folder, recursive=TRUE)
+    
+      # copy files
+      for(i in seq(files2analyse)){
+        file.rename(from = files2analyse[i], to = paste0(results_folder, "/", names2analyse[i]) )
+      }
+    
+      ##### validation
+    
+      files <- list.files(temp_type_path, full.names = TRUE, pattern = pattern)
+      file_names <- list.files(temp_type_path, pattern = pattern)
+      
+      # Select the desired % or number of file by simple random sampling
+      randomize <- sample(seq(files))
+      files2analyse <- files[randomize]
+      names2analyse <- file_names[randomize]
+      if(val_size <= 1){
+        size <- floor(val_size * length(files))
+      }else{
+        size <- val_size
+      }
+      files2analyse <- files2analyse[(1:size)]
+      names2analyse <- names2analyse[(1:size)]
+    
+      if (type == 1){
+        results_folder <- paste0(writepath, '/validation/normal')
+      }else if(type == 2){
+        results_folder <- paste0(writepath, '/validation/effusion')
+      }else {print("Incorrect type")}
+      dir.create(results_folder, recursive=TRUE)
+    
+      # copy files
+      for(i in seq(files2analyse)){
+        file.rename(from = files2analyse[i], to = paste0(results_folder, "/", names2analyse[i]) )
+    
+    
+      }
+
+      ##### test
+      
+      files <- list.files(temp_type_path, full.names = TRUE, pattern = pattern)
+      file_names <- list.files(temp_type_path, pattern = pattern)
+      
+      # Select the desired % or number of file by simple random sampling
+      randomize <- sample(seq(files))
+      files2analyse <- files[randomize]
+      names2analyse <- file_names[randomize]
+      if(test_size <= 1){
+        size <- floor(test_size * length(files))
+      }else{
+        size <- test_size
+      }
+      files2analyse <- files2analyse[(1:size)]
+      names2analyse <- names2analyse[(1:size)]
+      
+      if (type == 1){
+        results_folder <- paste0(writepath, '/test/normal')
+      }else if(type == 2){
+        results_folder <- paste0(writepath, '/test/effusion')
+      }else {print("Incorrect type")}
+      dir.create(results_folder, recursive=TRUE)
+      
+      
+      # copy files
+      for(i in seq(files2analyse)){
+        file.rename(from = files2analyse[i], to = paste0(results_folder, "/", names2analyse[i]) )
+      }
+      
+      ### remove the temp folder
+      unlink(file.path(writepath, 'temp'),recursive = TRUE)
+      
+}
+```
+
+We then execute our function and define the training, validation and test folders.
+
+```{r,echo=TRUE}
+# execute function
+random_files('rxtorax/normal','rxtorax', 1, 250, 50, 50, pattern = "png$|PNG$")
+random_files('rxtorax/effusion','rxtorax', 2, 250, 50, 50, pattern = "png$|PNG$")
+```
+
+
+```{r,echo=TRUE}
+# define training, validation and test folders
+train_dir<-"rxtorax/train"
+validation_dir<-"rxtorax/validation"
+test_dir<-"rxtorax/test"
+```
+
+We then use `image_data_generator` to normalize our data and `flow_images_from_directory` to define batches and resize our images and keep an unique channel. We start with a batch size of 25.
+
+```{r,echo=TRUE}
+b_size <- 25
+
+train_datagen <- image_data_generator(rescale = 1/255)
+train_generator <- flow_images_from_directory(
+  train_dir,
+  train_datagen,
+  color_mode = "grayscale",
+  target_size = c(64, 64),
+  batch_size = b_size,
+  class_mode = "binary"
+)
+
+validation_datagen <- image_data_generator(rescale = 1/255)
+validation_generator <- flow_images_from_directory(
+  validation_dir,
+  validation_datagen,
+  color_mode = "grayscale",
+  target_size = c(64, 64),
+  batch_size = b_size,
+  class_mode = "binary"
+)
+
+test_datagen <- image_data_generator(rescale = 1/255)
+test_generator <- flow_images_from_directory(
+  test_dir,
+  test_datagen,
+  color_mode = "grayscale",
+  target_size = c(64, 64),
+  batch_size = b_size,
+  class_mode = "binary",
+  classes = c("effusion","normal"),
+  shuffle = FALSE
+)
+# Now we have the images in the required format: 64x64 with a unique channel
+```
+
+
+### Question 3. Implement a Convolutional Neural Network (CNN)
+
+We then define a Convolutional Neural Network, with 2 convolution layers, each with a pooling layer. The we add a flatten layer and a dropout layer. At the bottom of the network we two fully connected layers with 128 and 32 nodes respectively. Finally, the output layer with one unit and a ‘sigmoid’ activation function. The total number of trainable parameters is 816 673. 
+ 
+```{r,eval=TRUE,echo=TRUE}
+model <- keras_model_sequential() %>%
+  # first convolutional hidden layer and max pooling
+  layer_conv_2d(filters = 32, kernel_size = c(3,3),
+                activation = "relu",input_shape = c(64, 64, 1)) %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  # second convolutional hidden layer and max pooling
+  layer_conv_2d(filters = 32, kernel_size = c(3, 3),
+                activation = "relu") %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  layer_flatten() %>%
+  layer_dropout(rate=0.4) %>%
+  # Outputs from dense layer are projected onto output layer
+  layer_dense(units = 128, activation = "relu") %>%
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+summary(model)
+```
+
+We compile and fit the model with a binary crossentropy loss function, compute the accuracy and use 13 epochs. We save our model in the attached file `cnn_model_batch25.h5`.
+
+```{r,echo=TRUE}
+# Compile the model
+model %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = optimizer_rmsprop(lr = 1e-4),
+  metrics = c("acc")
+)
+
+# Fit the model
+history <- model %>% fit_generator(
+  train_generator,
+  steps_per_epoch = 500/b_size,
+  epochs = 13,
+  validation_data = validation_generator,
+  validation_steps = 100/b_size
+)
+model %>% save_model_hdf5("cnn_model_batch25.h5")
+```
+
+```{r}
+png("cnn1_plot.png")
+plot(history)
+dev.off()
+```
+
+We obtain the following loss and accuracy values across epochs on the training and validation sets. We see the training and validation values stagnate and coincide after the 10th epoch. More than 13 epochs led to overfitting.
+
+```{r,eval=TRUE,fig.cap="\\label{fig:fig1} CNN accuracy on training and validation set",out.extra = "", fig.pos = 'h!', fig.align="center"}
+
+plot(history)
+```
+
+### Question 4. Tune the hyperparameter batch_size checking the values in the set 25,35,50
+
+```{r,echo=TRUE}
+b_s <- c(25,35,50)
+for (b in b_s) {
+  training_run("cnn_flags.r", flags = c(batch_size = b))
+}
+tuning_res <- tfruns::ls_runs()
+write_csv(tuning_res,"tfruns_res_batchsize.csv")
+```
+
+```{r}
+tfruns_res_batchsize <- read_csv("tfruns_res_batchsize.csv")
+best_batch <- tfruns_res_batchsize$flag_batch_size[which.max(tfruns_res_batchsize$metric_val_acc)]
+```
+
+In Table \ref{tab:tab1}, we present the output of the tuning. We find a batch size of `r best_batch` gives the best loss and accuracy values.
+
+```{r,eval=TRUE}
+tfruns_res_batchsize %>% select(c(6,2,3,4,5)) %>% kable(
+  digits = 3,
+  col.names = c("Batch size", "Train. loss", "Val. loss","Train. acc.","Val. acc"),
+  align = "c",
+  caption = "\\label{tab:tab1} Batch size tuning results - loss and accuracy"
+)
+```
+
+We set our batch size at `r best_batch` and refit our model with that size.
+
+```{r,echo =TRUE}
+set.seed(43)
+tensorflow::tf$random$set_seed(43)
+
+b_size <- best_batch
+
+# initialise the model
+model_bestbatch <- keras_model_sequential() %>%
+  # first convolutional hidden layer and max pooling
+  layer_conv_2d(filters = 32, kernel_size = c(3,3),
+                activation = "relu",input_shape = c(64, 64, 1)) %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  # second convolutional hidden layer and max pooling
+  layer_conv_2d(filters = 32, kernel_size = c(3, 3),
+                activation = "relu") %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  layer_flatten() %>%
+  layer_dropout(rate=0.4) %>%
+  # Outputs from dense layer are projected onto output layer
+  layer_dense(units = 128, activation = "relu") %>%
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+# Compile the model
+model_bestbatch %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = optimizer_rmsprop(lr = 1e-4),
+  metrics = c("acc")
+)
+
+# Fit the model
+history_bestbatch <- model_bestbatch %>% fit_generator(
+  train_generator,
+  steps_per_epoch = 500/b_size,
+  epochs = 13,
+  validation_data = validation_generator,
+  validation_steps = 100/b_size
+)
+model_bestbatch %>% save_model_hdf5("cnn_model_bestbatch.h5")
+```
+
+
+### Question 5. Assess the performance of the CNN predicting the categories of test images and obtain the confusion matrix.
+
+We use `predict` to predict the class of our test images and gather the results in a dataframe.
+
+```{r,echo =TRUE}
+predict <- model_bestbatch %>% predict_generator(
+  test_generator,
+  steps = 100/b_size)
+
+stat_df <- as_tibble(cbind(predict[1:100,], test_generator$filenames, test_generator$classes)) %>%
+  # assign prediction probability for filenames
+  rename(
+    predict_proba = V1,
+    filename = V2,
+    class = V3
+  ) %>%
+  mutate(predict_proba = as.double(predict_proba)) %>%
+           mutate(predicted_class = ifelse(predict_proba > 0.5, 1, 0)) %>%
+           mutate(predicted_class = as.integer(predicted_class)) %>% 
+  mutate(label_name = ifelse(predicted_class == 0, "effusion", "normal"))
+
+test_accuracy <- mean(stat_df$class==stat_df$predicted_class)
+
+```
+
+We obtain an accuracy of `r round(test_accuracy,2)` on the test set. The confusion matrix is:
+
+```{r,eval =TRUE}
+confusionMatrix(as.factor(stat_df$predicted_class),as.factor(stat_df$class))
+```
+
+
+### Question 6 & 7. Re-fit the CNN including data augmentation. Was the use of augmentation an improvement? Compare these two CNN models.
+
+We use `image_data_generator` to augment the training set of images and fit our model again with all the hyperparameters equal to our model without augmentation and the same seed.
+
+```{r,echo =TRUE}
+datagen <- image_data_generator(
+  rescale = 1/255,
+  rotation_range = 40,
+  width_shift_range = 0.2,
+  height_shift_range = 0.2,
+  shear_range = 0.2,
+  zoom_range = 0.2,
+  horizontal_flip = TRUE
+)
+
+set.seed(43)
+tensorflow::tf$random$set_seed(43)
+
+b_size <- best_batch
+
+train_generator <- flow_images_from_directory(
+  train_dir,
+  datagen,
+  color_mode = "grayscale",
+  target_size = c(64, 64),
+  batch_size = b_size,
+  class_mode = "binary"
+)
+
+# initialise the model
+model_bestbatch_aug <- keras_model_sequential() %>%
+  # first convolutional hidden layer and max pooling
+  layer_conv_2d(filters = 32, kernel_size = c(3,3),
+                activation = "relu",input_shape = c(64, 64, 1)) %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  # second convolutional hidden layer and max pooling
+  layer_conv_2d(filters = 32, kernel_size = c(3, 3),
+                activation = "relu") %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  layer_flatten() %>%
+  layer_dropout(rate=0.4) %>%
+  # Outputs from dense layer are projected onto output layer
+  layer_dense(units = 128, activation = "relu") %>%
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+# Compile the model
+model_bestbatch_aug %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = optimizer_rmsprop(lr = 1e-4),
+  metrics = c("acc")
+)
+
+# Fit the model
+history2 <- model_bestbatch_aug %>% fit_generator(
+  train_generator,
+  steps_per_epoch = 500/b_size,
+  epochs = 13,
+  validation_data = validation_generator,
+  validation_steps = 100/b_size
+)
+model_bestbatch_aug %>% save_model_hdf5("cnn_model_bestbatch_augmented.h5")
+
+# Prediction
+predict_bestbatch_aug <- model_bestbatch_aug %>% predict_generator(
+  test_generator,
+  steps = 100/b_size)
+
+stat_df_bestbatch_aug <- as_tibble(cbind(predict_bestbatch_aug, test_generator$filenames, test_generator$classes)) %>%
+  # assign prediction probability for filenames
+  rename(
+    predict_proba = V1,
+    filename = V2,
+    class = V3
+  ) %>%
+  mutate(predict_proba = as.double(predict_proba)) %>%
+           mutate(predicted_class = ifelse(predict_proba > 0.5, 1, 0)) %>%
+           mutate(predicted_class = as.integer(predicted_class)) %>% 
+  mutate(label_name = ifelse(predicted_class == 0, "effusion", "normal"))
+
+test_accuracy <- mean(stat_df_bestbatch_aug$class==stat_df_bestbatch_aug$predicted_class)
+```
+
+We compare the loss and accuracy on the training and validation sets before and after augmentation in \ref{fig:fig2}. We see that the validation accuracy stagnates from epoch 8 in both cases, but the level reached before augmentation was higher than the level reached after augmentation: about 71% against 67%.
+
+```{r,eval=TRUE,fig.cap="\\label{fig:fig2} CNN loss and accuracy on training and validation set before and after augmentation",out.extra = "", fig.pos = 'h!', fig.align="center"}
+p<-plot(history_bestbatch) + theme(legend.position = "bottom") + ggtitle("Before augmentation")
+p2<-plot(history2) + theme(legend.position = "bottom") + ggtitle("After augmentation")
+grid.arrange(p,p2,ncol=2)
+```
+
+We also compare the two models on the test sample. For the CNN after augmentation we obtain an accuracy of `r round(test_accuracy,2)` on the test set and the confusion matrix is:
+
+```{r,eval=TRUE}
+confusionMatrix(as.factor(stat_df_bestbatch_aug$predicted_class),as.factor(stat_df_bestbatch_aug$class))
+```
+
+The accuracy on the test set was slightly higher for the model before augmentation at 0.74. We note however that the two values are very close to each other. They each belong to the 95% confidence interval of the other. The Kappa measures are close to each other as well. Overall, the augmentation did not improve the model. 
+
+```{r}
+save.image("data_q1to6.RData")
+```
+
+
+### Question 8. Implement a convolutional autoencoder (CAE) network
+
+```{r,eval=TRUE}
+train_datagen <- image_data_generator(rescale = 1/255)
+train_generator <- flow_images_from_directory(
+  train_dir,
+  train_datagen,
+  color_mode = "grayscale",
+  target_size = c(64, 64),
+  batch_size = b_size,
+  class_mode = "input"
+)
+
+validation_datagen <- image_data_generator(rescale = 1/255)
+validation_generator <- flow_images_from_directory(
+  validation_dir,
+  validation_datagen,
+  color_mode = "grayscale",
+  target_size = c(64, 64),
+  batch_size = b_size,
+  class_mode = "input"
+)
+```
+
+
+```{r,eval=TRUE}
+#### Convolutional Encoder 
+
+model_enc <- keras_model_sequential() 
+model_enc %>%
+  layer_conv_2d(filters = 32, kernel_size = c(3,3), padding ="same",
+                activation = "relu",input_shape = c(64, 64, 1)) %>%
+  layer_max_pooling_2d(pool_size = c(2, 2),padding ="same") %>%
+
+  layer_conv_2d(filters = 32, kernel_size = c(3, 3), padding ="same",
+                activation = "relu") %>%
+  layer_max_pooling_2d(pool_size = c(2, 2),padding ="same") %>% 
+  
+  layer_conv_2d(filters = 16, kernel_size = c(3, 3), padding ="same",
+                activation = "relu") %>%
+  layer_max_pooling_2d(pool_size = c(2, 2), padding ="same") %>% 
+  
+  layer_conv_2d(filters = 16, kernel_size = c(3, 3), padding ="same",
+                activation = "relu") %>%
+  layer_max_pooling_2d(pool_size = c(2, 2), padding ="same") %>% 
+    layer_conv_2d(filters = 8, kernel_size = c(3, 3), padding ="same",
+                activation = "relu") %>%
+  layer_max_pooling_2d(pool_size = c(2, 2), padding ="same")
+  
+
+summary(model_enc)
+
+#### Convolutional Decoder 
+
+model_dec <- keras_model_sequential() 
+model_dec %>%
+  layer_conv_2d(filters = 8, kernel_size = c(3,3), 
+                activation = "relu", padding = "same",
+                input_shape = c(2, 2, 8))  %>%
+  layer_upsampling_2d(size = c(2,2))  %>%
+  
+  layer_conv_2d(filters = 16, kernel_size = c(3,3), 
+                activation = "relu", padding = "same")  %>%
+  layer_upsampling_2d(size = c(2,2))  %>%
+  
+  layer_conv_2d(filters = 16, kernel_size = c(3,3), 
+                activation = "relu", padding = "same")  %>%
+  layer_upsampling_2d(size = c(2,2))  %>%
+  
+layer_conv_2d(filters = 32, kernel_size = c(3,3), 
+                activation = "relu", padding = "same")  %>%
+  layer_upsampling_2d(size = c(2,2))  %>%
+  
+  layer_conv_2d(filters = 32, kernel_size = c(3,3), 
+                activation = "relu", padding = "same")  %>%
+  layer_upsampling_2d(size = c(2,2))  %>%
+  layer_conv_2d(filters = 1, kernel_size = c(1,1), 
+                activation = "relu")  
+summary(model_dec)
+
+#### Autoencoder 
+model_auto<-keras_model_sequential()
+model_auto %>%model_enc%>%model_dec
+```
+
+```{r,eval=TRUE}
+b_size <- 25
+
+model_auto %>% compile(
+  loss = "mean_squared_error",
+  #optimizer = optimizer_rmsprop(),
+  optimizer = "adam",
+  metrics = c("mean_squared_error")
+)
+
+# Fit the model
+history_auto <- model_auto %>% fit_generator(
+  train_generator,
+  steps_per_epoch = 500/b_size,
+  epochs = 5,
+  validation_data = validation_generator,
+  validation_steps = 100/b_size
+)
+model_auto %>% save_model_hdf5("auto_model.h5")
+save.image("data_q1to8.RData")
+```
+
+```{r,eval=TRUE,fig.cap="\\label{fig:fig3} Autoencoder MSE on training and validation set",out.extra = "", fig.pos = 'h!', fig.align="center"}
+plot(history_auto)
+```
+
+
+```{r,eval=FALSE}
+train_datagen <- image_data_generator(rescale = 1/255)
+train_generator <- flow_images_from_directory(
+  train_dir,
+  train_datagen,
+  color_mode = "grayscale",
+  target_size = c(64, 64),
+  batch_size = b_size,
+  class_mode = "input"
+)
+
+test_datagen <- image_data_generator(rescale = 1/255)
+test_generator <- flow_images_from_directory(
+  test_dir,
+  test_datagen,
+  color_mode = "grayscale",
+  target_size = c(64, 64),
+  batch_size = b_size,
+  class_mode = "input",
+  shuffle = FALSE
+)
+
+# From input to encoder - training
+predict_enc_train <- model_enc %>% predict_generator(
+  train_generator,
+  steps = 500/b_size)
+dim(predict_enc_train)
+
+# From input to encoder - test
+predict_enc_test <- model_enc %>% predict_generator(
+  test_generator,
+  steps = 100/b_size)
+dim(predict_enc_test)
+
+# flat file 
+dim(predict_enc_train) <- c(nrow(predict_enc_train),prod(dim(predict_enc_train)[-1]))
+dim(predict_enc_test) <- c(nrow(predict_enc_test),prod(dim(predict_enc_test)[-1]))
+
+# Flatten array 
+y_radio_train <- train_generator$classes
+y_radio_test <- stat_df_bestbatch_aug$class
+save(predict_enc_train,y_radio_train,predict_enc_test, y_radio, file=paste0("Conv_Encod_Flat_.RData"))
+```
+
+```{r,eval=FALSE}
+load("Conv_Encod_Flat_.RData")
+
+training <- data.frame(y=as.factor(y_radio_train),predict_enc_train)
+test <- data.frame(y=as.factor(y_radio_test),predict_enc_test)
+training$y <- revalue(training$y, c("0"="effusion", "1"="normal"))
+test$y <- revalue(test$y, c("0"="effusion", "1"="normal"))
+
+control <- trainControl(
+  method = "repeatedcv",
+  number = 5,
+  repeats = 3,
+  classProbs = TRUE
+)
+
+metric <- "Accuracy"
+
+xgboost <- train(y ~ .,
+  data = training,
+  method = "xgbTree",
+  trControl = control,
+  verbose = FALSE,
+  metric = metric,
+)
+
+plot(xgboost)
+
+save(xgboost, file = "xgboost_model.Rdata")
+```
+
+```{r}
+
+```
+
