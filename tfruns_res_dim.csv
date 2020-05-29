@@ -1,514 +1,409 @@
 run_dir,metric_loss,metric_mean_squared_error,metric_val_loss,metric_val_mean_squared_error,metric_acc,metric_val_acc,flag_filters_nb_start,flag_pooling_size,flag_batch_size,samples,epochs,epochs_completed,metrics,model,loss_function,optimizer,learning_rate,script,start,end,completed,output,source_code,context,type
-runs/2020-05-27T10-17-45Z,0.0118,0.0118,0.0113,0.0113,NA,NA,128,2,NA,10,5,5,runs/2020-05-27T10-17-45Z/tfruns.d/metrics.json,"Model
-Model: ""sequential_56""
+runs/2020-05-29T21-38-22Z,0.0121,0.0121,0.0107,0.0107,NA,NA,128,2,NA,10,5,5,runs/2020-05-29T21-38-22Z/tfruns.d/metrics.json,"Model
+Model: ""sequential_17""
 ________________________________________________________________________________
 Layer (type)                        Output Shape                    Param #     
 ================================================================================
-sequential_54 (Sequential)          (None, 8, 8, 64)                99136       
+sequential_15 (Sequential)          (None, 8, 8, 64)                99136       
 ________________________________________________________________________________
-sequential_55 (Sequential)          (None, 64, 64, 1)               258497      
+sequential_16 (Sequential)          (None, 64, 64, 1)               258497      
 ================================================================================
 Total params: 357,633
 Trainable params: 357,633
 Non-trainable params: 0
 ________________________________________________________________________________
 
-",mean_squared_error,<tensorflow.python.keras.optimizer_v2.adam.Adam>,0.00100000004749745,cae_flags.R,2020-05-27T10:17:45Z,2020-05-27T10:20:26Z,TRUE,"
-> #Flags
-> 
-> #Flags
-> FLAGS <- flags(
-+   flag_numeric(""filters_nb_start"", 32),
-+   flag_numeric(""pooling_size"", 2)
-+ )
+",mean_squared_error,<tensorflow.python.keras.optimizer_v2.adam.Adam>,0.00100000004749745,cae_flags.R,2020-05-29T21:38:22Z,2020-05-29T21:40:40Z,TRUE,"
+> FLAGS <- flags(flag_numeric(""filters_nb_start"", 32), 
++     flag_numeric(""pooling_size"", 2))
 
-> #train and validation data
 > train_datagen <- image_data_generator(rescale = 1/255)
 
-> train_generator <- flow_images_from_directory(
-+   train_dir,
-+   train_datagen,
-+   color_mode = ""grayscale"",
-+   target_size = c(64, 64),
-+   batc .... [TRUNCATED] 
+> train_generator <- flow_images_from_directory(train_dir, 
++     train_datagen, color_mode = ""grayscale"", target_size = c(64, 
++         64), batch_s .... [TRUNCATED] 
 
 > validation_datagen <- image_data_generator(rescale = 1/255)
 
-> validation_generator <- flow_images_from_directory(
-+   validation_dir,
-+   validation_datagen,
-+   color_mode = ""grayscale"",
-+   target_size = c(64 .... [TRUNCATED] 
+> validation_generator <- flow_images_from_directory(validation_dir, 
++     validation_datagen, color_mode = ""grayscale"", target_size = c(64, 
++       .... [TRUNCATED] 
 
-> #### Convolutional Encoder
-> model_enc <- keras_model_sequential() 
+> model_enc <- keras_model_sequential()
 
-> model_enc %>%
-+   layer_conv_2d(filters = FLAGS$filters_nb_start, kernel_size = c(2,2), padding =""same"",
-+                 activation = ""relu"",input .... [TRUNCATED] 
+> model_enc %>% layer_conv_2d(filters = FLAGS$filters_nb_start, 
++     kernel_size = c(2, 2), padding = ""same"", activation = ""relu"", 
++     input_shap .... [TRUNCATED] 
 
-> #### Convolutional Decoder 
-> 
-> model_dec <- keras_model_sequential() 
+> model_dec <- keras_model_sequential()
 
-> model_dec %>%
-+   layer_conv_2d(filters = FLAGS$filters_nb_start/2, kernel_size = c(3,3), 
-+                 activation = ""relu"", padding = ""same"",
- .... [TRUNCATED] 
+> model_dec %>% layer_conv_2d(filters = FLAGS$filters_nb_start/2, 
++     kernel_size = c(3, 3), activation = ""relu"", padding = ""same"", 
++     input_sh .... [TRUNCATED] 
 
 > summary(model_dec)
-Model: ""sequential_55""
-__________________________________________________________________________
-Layer (type)                     Output Shape                 Param #     
-==========================================================================
-conv2d_157 (Conv2D)              (None, 8, 8, 64)             36928       
-__________________________________________________________________________
-up_sampling2d_34 (UpSampling2D)  (None, 16, 16, 64)           0           
-__________________________________________________________________________
-conv2d_158 (Conv2D)              (None, 16, 16, 128)          73856       
-__________________________________________________________________________
-up_sampling2d_35 (UpSampling2D)  (None, 32, 32, 128)          0           
-__________________________________________________________________________
-conv2d_159 (Conv2D)              (None, 32, 32, 128)          147584      
-__________________________________________________________________________
-up_sampling2d_36 (UpSampling2D)  (None, 64, 64, 128)          0           
-__________________________________________________________________________
-conv2d_160 (Conv2D)              (None, 64, 64, 1)            129         
-==========================================================================
+Model: ""sequential_16""
+________________________________________________________________________________
+Layer (type)                        Output Shape                    Param #     
+================================================================================
+conv2d_36 (Conv2D)                  (None, 8, 8, 64)                36928       
+________________________________________________________________________________
+up_sampling2d_9 (UpSampling2D)      (None, 16, 16, 64)              0           
+________________________________________________________________________________
+conv2d_37 (Conv2D)                  (None, 16, 16, 128)             73856       
+________________________________________________________________________________
+up_sampling2d_10 (UpSampling2D)     (None, 32, 32, 128)             0           
+________________________________________________________________________________
+conv2d_38 (Conv2D)                  (None, 32, 32, 128)             147584      
+________________________________________________________________________________
+up_sampling2d_11 (UpSampling2D)     (None, 64, 64, 128)             0           
+________________________________________________________________________________
+conv2d_39 (Conv2D)                  (None, 64, 64, 1)               129         
+================================================================================
 Total params: 258,497
 Trainable params: 258,497
 Non-trainable params: 0
-__________________________________________________________________________
+________________________________________________________________________________
 
-> #### Autoencoder 
-> model_auto<-keras_model_sequential()
+> model_auto <- keras_model_sequential()
 
-> model_auto %>%model_enc%>%model_dec
+> model_auto %>% model_enc %>% model_dec
 Model
-Model: ""sequential_56""
-__________________________________________________________________________
-Layer (type)                     Output Shape                 Param #     
-==========================================================================
-sequential_54 (Sequential)       (None, 8, 8, 64)             99136       
-__________________________________________________________________________
-sequential_55 (Sequential)       (None, 64, 64, 1)            258497      
-==========================================================================
+Model: ""sequential_17""
+________________________________________________________________________________
+Layer (type)                        Output Shape                    Param #     
+================================================================================
+sequential_15 (Sequential)          (None, 8, 8, 64)                99136       
+________________________________________________________________________________
+sequential_16 (Sequential)          (None, 64, 64, 1)               258497      
+================================================================================
 Total params: 357,633
 Trainable params: 357,633
 Non-trainable params: 0
-__________________________________________________________________________
+________________________________________________________________________________
 
 
 
-> #batch size
 > b_size <- 50
 
-> # set seed for reproductibility
 > set.seed(42)
 
 > tensorflow::tf$random$set_seed(42)
 
-> #initialise the model
-> model_auto %>% compile(
-+   loss = ""mean_squared_error"",
-+   #optimizer = optimizer_rmsprop(),
-+   optimizer = ""adam"",
-+   m .... [TRUNCATED] 
+> model_auto %>% compile(loss = ""mean_squared_error"", 
++     optimizer = ""adam"", metrics = c(""mean_squared_error""))
 
-> # Fit the model
-> history_auto <- model_auto %>% fit_generator(
-+   train_generator,
-+   steps_per_epoch = 500/b_size,
-+   epochs = 5,
-+   validatio .... [TRUNCATED] 
+> history_auto <- model_auto %>% fit_generator(train_generator, 
++     steps_per_epoch = 500/b_size, epochs = 5, validation_data = validation_generato .... [TRUNCATED] 
 
 > model_auto %>% save_model_hdf5(""auto_model.h5"")
 
 > train_datagen <- image_data_generator(rescale = 1/255)
 
-> train_generator <- flow_images_from_directory(
-+   train_dir,
-+   train_datagen,
-+   color_mode = ""grayscale"",
-+   target_size = c(64, 64),
-+   batc .... [TRUNCATED] 
+> train_generator <- flow_images_from_directory(train_dir, 
++     train_datagen, color_mode = ""grayscale"", target_size = c(64, 
++         64), batch_s .... [TRUNCATED] 
 
 > test_datagen <- image_data_generator(rescale = 1/255)
 
-> test_generator <- flow_images_from_directory(
-+   test_dir,
-+   test_datagen,
-+   color_mode = ""grayscale"",
-+   target_size = c(64, 64),
-+   batch_s .... [TRUNCATED] 
+> test_generator <- flow_images_from_directory(test_dir, 
++     test_datagen, color_mode = ""grayscale"", target_size = c(64, 
++         64), batch_size .... [TRUNCATED] 
 
-> # From input to encoder - training
-> predict_enc_train <- model_enc %>% predict_generator(
-+   train_generator,
-+   steps = 500/b_size)
+> predict_enc_train <- model_enc %>% predict_generator(train_generator, 
++     steps = 500/b_size)
 
 > dim(predict_enc_train)
 [1] 500   8   8  64
 
-> # From input to encoder - test
-> predict_enc_test <- model_enc %>% predict_generator(
-+   test_generator,
-+   steps = 100/b_size)
+> predict_enc_test <- model_enc %>% predict_generator(test_generator, 
++     steps = 100/b_size)
 
 > dim(predict_enc_test)
 [1] 100   8   8  64
 
-> # flat file 
-> dim(predict_enc_train) <- c(nrow(predict_enc_train),prod(dim(predict_enc_train)[-1]))
+> dim(predict_enc_train) <- c(nrow(predict_enc_train), 
++     prod(dim(predict_enc_train)[-1]))
 
-> dim(predict_enc_test) <- c(nrow(predict_enc_test),prod(dim(predict_enc_test)[-1]))
+> dim(predict_enc_test) <- c(nrow(predict_enc_test), 
++     prod(dim(predict_enc_test)[-1]))
 
-> # Flatten array 
 > y_radio_train <- train_generator$classes
 
-> y_radio_test <- stat_df_bestbatch_aug$class
+> y_radio_test <- test_generator$classes
 
-> save(predict_enc_train,y_radio_train,predict_enc_test, y_radio_train, file=paste0(""Conv_Encod_Flat_filter"",
-+                                        .... [TRUNCATED] ",runs/2020-05-27T10-17-45Z/tfruns.d/source.tar.gz,local,training
-runs/2020-05-27T10-15-57Z,0.0259,0.0259,0.022,0.022,NA,NA,128,4,NA,10,5,5,runs/2020-05-27T10-15-57Z/tfruns.d/metrics.json,"Model
-Model: ""sequential_53""
+> save(predict_enc_train, y_radio_train, predict_enc_test, 
++     y_radio_train, file = paste0(""Conv_Encod_Flat_filter"", FLAGS$filters_nb_start, 
++    .... [TRUNCATED] ",runs/2020-05-29T21-38-22Z/tfruns.d/source.tar.gz,local,training
+runs/2020-05-29T21-36-42Z,0.0277,0.0277,0.0239,0.0239,NA,NA,128,4,NA,10,5,5,runs/2020-05-29T21-36-42Z/tfruns.d/metrics.json,"Model
+Model: ""sequential_14""
 ________________________________________________________________________________
 Layer (type)                        Output Shape                    Param #     
 ================================================================================
-sequential_51 (Sequential)          (None, 4, 4, 64)                99136       
+sequential_12 (Sequential)          (None, 4, 4, 64)                99136       
 ________________________________________________________________________________
-sequential_52 (Sequential)          (None, 64, 64, 1)               258497      
+sequential_13 (Sequential)          (None, 64, 64, 1)               258497      
 ================================================================================
 Total params: 357,633
 Trainable params: 357,633
 Non-trainable params: 0
 ________________________________________________________________________________
 
-",mean_squared_error,<tensorflow.python.keras.optimizer_v2.adam.Adam>,0.00100000004749745,cae_flags.R,2020-05-27T10:15:57Z,2020-05-27T10:17:44Z,TRUE,"
-> #Flags
-> 
-> #Flags
-> FLAGS <- flags(
-+   flag_numeric(""filters_nb_start"", 32),
-+   flag_numeric(""pooling_size"", 2)
-+ )
+",mean_squared_error,<tensorflow.python.keras.optimizer_v2.adam.Adam>,0.00100000004749745,cae_flags.R,2020-05-29T21:36:42Z,2020-05-29T21:38:22Z,TRUE,"
+> FLAGS <- flags(flag_numeric(""filters_nb_start"", 32), 
++     flag_numeric(""pooling_size"", 2))
 
-> #train and validation data
 > train_datagen <- image_data_generator(rescale = 1/255)
 
-> train_generator <- flow_images_from_directory(
-+   train_dir,
-+   train_datagen,
-+   color_mode = ""grayscale"",
-+   target_size = c(64, 64),
-+   batc .... [TRUNCATED] 
+> train_generator <- flow_images_from_directory(train_dir, 
++     train_datagen, color_mode = ""grayscale"", target_size = c(64, 
++         64), batch_s .... [TRUNCATED] 
 
 > validation_datagen <- image_data_generator(rescale = 1/255)
 
-> validation_generator <- flow_images_from_directory(
-+   validation_dir,
-+   validation_datagen,
-+   color_mode = ""grayscale"",
-+   target_size = c(64 .... [TRUNCATED] 
+> validation_generator <- flow_images_from_directory(validation_dir, 
++     validation_datagen, color_mode = ""grayscale"", target_size = c(64, 
++       .... [TRUNCATED] 
 
-> #### Convolutional Encoder
-> model_enc <- keras_model_sequential() 
+> model_enc <- keras_model_sequential()
 
-> model_enc %>%
-+   layer_conv_2d(filters = FLAGS$filters_nb_start, kernel_size = c(2,2), padding =""same"",
-+                 activation = ""relu"",input .... [TRUNCATED] 
+> model_enc %>% layer_conv_2d(filters = FLAGS$filters_nb_start, 
++     kernel_size = c(2, 2), padding = ""same"", activation = ""relu"", 
++     input_shap .... [TRUNCATED] 
 
-> #### Convolutional Decoder 
-> 
-> model_dec <- keras_model_sequential() 
+> model_dec <- keras_model_sequential()
 
-> model_dec %>%
-+   layer_conv_2d(filters = FLAGS$filters_nb_start/2, kernel_size = c(3,3), 
-+                 activation = ""relu"", padding = ""same"",
- .... [TRUNCATED] 
+> model_dec %>% layer_conv_2d(filters = FLAGS$filters_nb_start/2, 
++     kernel_size = c(3, 3), activation = ""relu"", padding = ""same"", 
++     input_sh .... [TRUNCATED] 
 
 > summary(model_dec)
-Model: ""sequential_52""
-__________________________________________________________________________
-Layer (type)                     Output Shape                 Param #     
-==========================================================================
-conv2d_150 (Conv2D)              (None, 4, 4, 64)             36928       
-__________________________________________________________________________
-up_sampling2d_31 (UpSampling2D)  (None, 8, 8, 64)             0           
-__________________________________________________________________________
-conv2d_151 (Conv2D)              (None, 8, 8, 128)            73856       
-__________________________________________________________________________
-up_sampling2d_32 (UpSampling2D)  (None, 16, 16, 128)          0           
-__________________________________________________________________________
-conv2d_152 (Conv2D)              (None, 16, 16, 128)          147584      
-__________________________________________________________________________
-up_sampling2d_33 (UpSampling2D)  (None, 64, 64, 128)          0           
-__________________________________________________________________________
-conv2d_153 (Conv2D)              (None, 64, 64, 1)            129         
-==========================================================================
+Model: ""sequential_13""
+________________________________________________________________________________
+Layer (type)                        Output Shape                    Param #     
+================================================================================
+conv2d_29 (Conv2D)                  (None, 4, 4, 64)                36928       
+________________________________________________________________________________
+up_sampling2d_6 (UpSampling2D)      (None, 8, 8, 64)                0           
+________________________________________________________________________________
+conv2d_30 (Conv2D)                  (None, 8, 8, 128)               73856       
+________________________________________________________________________________
+up_sampling2d_7 (UpSampling2D)      (None, 16, 16, 128)             0           
+________________________________________________________________________________
+conv2d_31 (Conv2D)                  (None, 16, 16, 128)             147584      
+________________________________________________________________________________
+up_sampling2d_8 (UpSampling2D)      (None, 64, 64, 128)             0           
+________________________________________________________________________________
+conv2d_32 (Conv2D)                  (None, 64, 64, 1)               129         
+================================================================================
 Total params: 258,497
 Trainable params: 258,497
 Non-trainable params: 0
-__________________________________________________________________________
+________________________________________________________________________________
 
-> #### Autoencoder 
-> model_auto<-keras_model_sequential()
+> model_auto <- keras_model_sequential()
 
-> model_auto %>%model_enc%>%model_dec
+> model_auto %>% model_enc %>% model_dec
 Model
-Model: ""sequential_53""
-__________________________________________________________________________
-Layer (type)                     Output Shape                 Param #     
-==========================================================================
-sequential_51 (Sequential)       (None, 4, 4, 64)             99136       
-__________________________________________________________________________
-sequential_52 (Sequential)       (None, 64, 64, 1)            258497      
-==========================================================================
+Model: ""sequential_14""
+________________________________________________________________________________
+Layer (type)                        Output Shape                    Param #     
+================================================================================
+sequential_12 (Sequential)          (None, 4, 4, 64)                99136       
+________________________________________________________________________________
+sequential_13 (Sequential)          (None, 64, 64, 1)               258497      
+================================================================================
 Total params: 357,633
 Trainable params: 357,633
 Non-trainable params: 0
-__________________________________________________________________________
+________________________________________________________________________________
 
 
 
-> #batch size
 > b_size <- 50
 
-> # set seed for reproductibility
 > set.seed(42)
 
 > tensorflow::tf$random$set_seed(42)
 
-> #initialise the model
-> model_auto %>% compile(
-+   loss = ""mean_squared_error"",
-+   #optimizer = optimizer_rmsprop(),
-+   optimizer = ""adam"",
-+   m .... [TRUNCATED] 
+> model_auto %>% compile(loss = ""mean_squared_error"", 
++     optimizer = ""adam"", metrics = c(""mean_squared_error""))
 
-> # Fit the model
-> history_auto <- model_auto %>% fit_generator(
-+   train_generator,
-+   steps_per_epoch = 500/b_size,
-+   epochs = 5,
-+   validatio .... [TRUNCATED] 
+> history_auto <- model_auto %>% fit_generator(train_generator, 
++     steps_per_epoch = 500/b_size, epochs = 5, validation_data = validation_generato .... [TRUNCATED] 
 
 > model_auto %>% save_model_hdf5(""auto_model.h5"")
 
 > train_datagen <- image_data_generator(rescale = 1/255)
 
-> train_generator <- flow_images_from_directory(
-+   train_dir,
-+   train_datagen,
-+   color_mode = ""grayscale"",
-+   target_size = c(64, 64),
-+   batc .... [TRUNCATED] 
+> train_generator <- flow_images_from_directory(train_dir, 
++     train_datagen, color_mode = ""grayscale"", target_size = c(64, 
++         64), batch_s .... [TRUNCATED] 
 
 > test_datagen <- image_data_generator(rescale = 1/255)
 
-> test_generator <- flow_images_from_directory(
-+   test_dir,
-+   test_datagen,
-+   color_mode = ""grayscale"",
-+   target_size = c(64, 64),
-+   batch_s .... [TRUNCATED] 
+> test_generator <- flow_images_from_directory(test_dir, 
++     test_datagen, color_mode = ""grayscale"", target_size = c(64, 
++         64), batch_size .... [TRUNCATED] 
 
-> # From input to encoder - training
-> predict_enc_train <- model_enc %>% predict_generator(
-+   train_generator,
-+   steps = 500/b_size)
+> predict_enc_train <- model_enc %>% predict_generator(train_generator, 
++     steps = 500/b_size)
 
 > dim(predict_enc_train)
 [1] 500   4   4  64
 
-> # From input to encoder - test
-> predict_enc_test <- model_enc %>% predict_generator(
-+   test_generator,
-+   steps = 100/b_size)
+> predict_enc_test <- model_enc %>% predict_generator(test_generator, 
++     steps = 100/b_size)
 
 > dim(predict_enc_test)
 [1] 100   4   4  64
 
-> # flat file 
-> dim(predict_enc_train) <- c(nrow(predict_enc_train),prod(dim(predict_enc_train)[-1]))
+> dim(predict_enc_train) <- c(nrow(predict_enc_train), 
++     prod(dim(predict_enc_train)[-1]))
 
-> dim(predict_enc_test) <- c(nrow(predict_enc_test),prod(dim(predict_enc_test)[-1]))
+> dim(predict_enc_test) <- c(nrow(predict_enc_test), 
++     prod(dim(predict_enc_test)[-1]))
 
-> # Flatten array 
 > y_radio_train <- train_generator$classes
 
-> y_radio_test <- stat_df_bestbatch_aug$class
+> y_radio_test <- test_generator$classes
 
-> save(predict_enc_train,y_radio_train,predict_enc_test, y_radio_train, file=paste0(""Conv_Encod_Flat_filter"",
-+                                        .... [TRUNCATED] ",runs/2020-05-27T10-15-57Z/tfruns.d/source.tar.gz,local,training
-runs/2020-05-27T10-14-56Z,0.0318,0.0318,0.0295,0.0295,NA,NA,64,4,NA,10,5,5,runs/2020-05-27T10-14-56Z/tfruns.d/metrics.json,"Model
-Model: ""sequential_50""
+> save(predict_enc_train, y_radio_train, predict_enc_test, 
++     y_radio_train, file = paste0(""Conv_Encod_Flat_filter"", FLAGS$filters_nb_start, 
++    .... [TRUNCATED] ",runs/2020-05-29T21-36-42Z/tfruns.d/source.tar.gz,local,training
+runs/2020-05-29T21-35-46Z,0.0312,0.0312,0.0283,0.0283,NA,NA,64,4,NA,10,5,5,runs/2020-05-29T21-35-46Z/tfruns.d/metrics.json,"Model
+Model: ""sequential_11""
 ________________________________________________________________________________
 Layer (type)                        Output Shape                    Param #     
 ================================================================================
-sequential_48 (Sequential)          (None, 4, 4, 32)                24992       
+sequential_9 (Sequential)           (None, 4, 4, 32)                24992       
 ________________________________________________________________________________
-sequential_49 (Sequential)          (None, 64, 64, 1)               64737       
+sequential_10 (Sequential)          (None, 64, 64, 1)               64737       
 ================================================================================
 Total params: 89,729
 Trainable params: 89,729
 Non-trainable params: 0
 ________________________________________________________________________________
 
-",mean_squared_error,<tensorflow.python.keras.optimizer_v2.adam.Adam>,0.00100000004749745,cae_flags.R,2020-05-27T10:14:57Z,2020-05-27T10:15:56Z,TRUE,"
-> #Flags
-> 
-> #Flags
-> FLAGS <- flags(
-+   flag_numeric(""filters_nb_start"", 32),
-+   flag_numeric(""pooling_size"", 2)
-+ )
+",mean_squared_error,<tensorflow.python.keras.optimizer_v2.adam.Adam>,0.00100000004749745,cae_flags.R,2020-05-29T21:35:46Z,2020-05-29T21:36:42Z,TRUE,"
+> FLAGS <- flags(flag_numeric(""filters_nb_start"", 32), 
++     flag_numeric(""pooling_size"", 2))
 
-> #train and validation data
 > train_datagen <- image_data_generator(rescale = 1/255)
 
-> train_generator <- flow_images_from_directory(
-+   train_dir,
-+   train_datagen,
-+   color_mode = ""grayscale"",
-+   target_size = c(64, 64),
-+   batc .... [TRUNCATED] 
+> train_generator <- flow_images_from_directory(train_dir, 
++     train_datagen, color_mode = ""grayscale"", target_size = c(64, 
++         64), batch_s .... [TRUNCATED] 
 
 > validation_datagen <- image_data_generator(rescale = 1/255)
 
-> validation_generator <- flow_images_from_directory(
-+   validation_dir,
-+   validation_datagen,
-+   color_mode = ""grayscale"",
-+   target_size = c(64 .... [TRUNCATED] 
+> validation_generator <- flow_images_from_directory(validation_dir, 
++     validation_datagen, color_mode = ""grayscale"", target_size = c(64, 
++       .... [TRUNCATED] 
 
-> #### Convolutional Encoder
-> model_enc <- keras_model_sequential() 
+> model_enc <- keras_model_sequential()
 
-> model_enc %>%
-+   layer_conv_2d(filters = FLAGS$filters_nb_start, kernel_size = c(2,2), padding =""same"",
-+                 activation = ""relu"",input .... [TRUNCATED] 
+> model_enc %>% layer_conv_2d(filters = FLAGS$filters_nb_start, 
++     kernel_size = c(2, 2), padding = ""same"", activation = ""relu"", 
++     input_shap .... [TRUNCATED] 
 
-> #### Convolutional Decoder 
-> 
-> model_dec <- keras_model_sequential() 
+> model_dec <- keras_model_sequential()
 
-> model_dec %>%
-+   layer_conv_2d(filters = FLAGS$filters_nb_start/2, kernel_size = c(3,3), 
-+                 activation = ""relu"", padding = ""same"",
- .... [TRUNCATED] 
+> model_dec %>% layer_conv_2d(filters = FLAGS$filters_nb_start/2, 
++     kernel_size = c(3, 3), activation = ""relu"", padding = ""same"", 
++     input_sh .... [TRUNCATED] 
 
 > summary(model_dec)
-Model: ""sequential_49""
-__________________________________________________________________________
-Layer (type)                     Output Shape                 Param #     
-==========================================================================
-conv2d_143 (Conv2D)              (None, 4, 4, 32)             9248        
-__________________________________________________________________________
-up_sampling2d_28 (UpSampling2D)  (None, 8, 8, 32)             0           
-__________________________________________________________________________
-conv2d_144 (Conv2D)              (None, 8, 8, 64)             18496       
-__________________________________________________________________________
-up_sampling2d_29 (UpSampling2D)  (None, 16, 16, 64)           0           
-__________________________________________________________________________
-conv2d_145 (Conv2D)              (None, 16, 16, 64)           36928       
-__________________________________________________________________________
-up_sampling2d_30 (UpSampling2D)  (None, 64, 64, 64)           0           
-__________________________________________________________________________
-conv2d_146 (Conv2D)              (None, 64, 64, 1)            65          
-==========================================================================
+Model: ""sequential_10""
+________________________________________________________________________________
+Layer (type)                        Output Shape                    Param #     
+================================================================================
+conv2d_22 (Conv2D)                  (None, 4, 4, 32)                9248        
+________________________________________________________________________________
+up_sampling2d_3 (UpSampling2D)      (None, 8, 8, 32)                0           
+________________________________________________________________________________
+conv2d_23 (Conv2D)                  (None, 8, 8, 64)                18496       
+________________________________________________________________________________
+up_sampling2d_4 (UpSampling2D)      (None, 16, 16, 64)              0           
+________________________________________________________________________________
+conv2d_24 (Conv2D)                  (None, 16, 16, 64)              36928       
+________________________________________________________________________________
+up_sampling2d_5 (UpSampling2D)      (None, 64, 64, 64)              0           
+________________________________________________________________________________
+conv2d_25 (Conv2D)                  (None, 64, 64, 1)               65          
+================================================================================
 Total params: 64,737
 Trainable params: 64,737
 Non-trainable params: 0
-__________________________________________________________________________
+________________________________________________________________________________
 
-> #### Autoencoder 
-> model_auto<-keras_model_sequential()
+> model_auto <- keras_model_sequential()
 
-> model_auto %>%model_enc%>%model_dec
+> model_auto %>% model_enc %>% model_dec
 Model
-Model: ""sequential_50""
-__________________________________________________________________________
-Layer (type)                     Output Shape                 Param #     
-==========================================================================
-sequential_48 (Sequential)       (None, 4, 4, 32)             24992       
-__________________________________________________________________________
-sequential_49 (Sequential)       (None, 64, 64, 1)            64737       
-==========================================================================
+Model: ""sequential_11""
+________________________________________________________________________________
+Layer (type)                        Output Shape                    Param #     
+================================================================================
+sequential_9 (Sequential)           (None, 4, 4, 32)                24992       
+________________________________________________________________________________
+sequential_10 (Sequential)          (None, 64, 64, 1)               64737       
+================================================================================
 Total params: 89,729
 Trainable params: 89,729
 Non-trainable params: 0
-__________________________________________________________________________
+________________________________________________________________________________
 
 
 
-> #batch size
 > b_size <- 50
 
-> # set seed for reproductibility
 > set.seed(42)
 
 > tensorflow::tf$random$set_seed(42)
 
-> #initialise the model
-> model_auto %>% compile(
-+   loss = ""mean_squared_error"",
-+   #optimizer = optimizer_rmsprop(),
-+   optimizer = ""adam"",
-+   m .... [TRUNCATED] 
+> model_auto %>% compile(loss = ""mean_squared_error"", 
++     optimizer = ""adam"", metrics = c(""mean_squared_error""))
 
-> # Fit the model
-> history_auto <- model_auto %>% fit_generator(
-+   train_generator,
-+   steps_per_epoch = 500/b_size,
-+   epochs = 5,
-+   validatio .... [TRUNCATED] 
+> history_auto <- model_auto %>% fit_generator(train_generator, 
++     steps_per_epoch = 500/b_size, epochs = 5, validation_data = validation_generato .... [TRUNCATED] 
 
 > model_auto %>% save_model_hdf5(""auto_model.h5"")
 
 > train_datagen <- image_data_generator(rescale = 1/255)
 
-> train_generator <- flow_images_from_directory(
-+   train_dir,
-+   train_datagen,
-+   color_mode = ""grayscale"",
-+   target_size = c(64, 64),
-+   batc .... [TRUNCATED] 
+> train_generator <- flow_images_from_directory(train_dir, 
++     train_datagen, color_mode = ""grayscale"", target_size = c(64, 
++         64), batch_s .... [TRUNCATED] 
 
 > test_datagen <- image_data_generator(rescale = 1/255)
 
-> test_generator <- flow_images_from_directory(
-+   test_dir,
-+   test_datagen,
-+   color_mode = ""grayscale"",
-+   target_size = c(64, 64),
-+   batch_s .... [TRUNCATED] 
+> test_generator <- flow_images_from_directory(test_dir, 
++     test_datagen, color_mode = ""grayscale"", target_size = c(64, 
++         64), batch_size .... [TRUNCATED] 
 
-> # From input to encoder - training
-> predict_enc_train <- model_enc %>% predict_generator(
-+   train_generator,
-+   steps = 500/b_size)
+> predict_enc_train <- model_enc %>% predict_generator(train_generator, 
++     steps = 500/b_size)
 
 > dim(predict_enc_train)
 [1] 500   4   4  32
 
-> # From input to encoder - test
-> predict_enc_test <- model_enc %>% predict_generator(
-+   test_generator,
-+   steps = 100/b_size)
+> predict_enc_test <- model_enc %>% predict_generator(test_generator, 
++     steps = 100/b_size)
 
 > dim(predict_enc_test)
 [1] 100   4   4  32
 
-> # flat file 
-> dim(predict_enc_train) <- c(nrow(predict_enc_train),prod(dim(predict_enc_train)[-1]))
+> dim(predict_enc_train) <- c(nrow(predict_enc_train), 
++     prod(dim(predict_enc_train)[-1]))
 
-> dim(predict_enc_test) <- c(nrow(predict_enc_test),prod(dim(predict_enc_test)[-1]))
+> dim(predict_enc_test) <- c(nrow(predict_enc_test), 
++     prod(dim(predict_enc_test)[-1]))
 
-> # Flatten array 
 > y_radio_train <- train_generator$classes
 
-> y_radio_test <- stat_df_bestbatch_aug$class
+> y_radio_test <- test_generator$classes
 
-> save(predict_enc_train,y_radio_train,predict_enc_test, y_radio_train, file=paste0(""Conv_Encod_Flat_filter"",
-+                                        .... [TRUNCATED] ",runs/2020-05-27T10-14-56Z/tfruns.d/source.tar.gz,local,training
+> save(predict_enc_train, y_radio_train, predict_enc_test, 
++     y_radio_train, file = paste0(""Conv_Encod_Flat_filter"", FLAGS$filters_nb_start, 
++    .... [TRUNCATED] ",runs/2020-05-29T21-35-46Z/tfruns.d/source.tar.gz,local,training

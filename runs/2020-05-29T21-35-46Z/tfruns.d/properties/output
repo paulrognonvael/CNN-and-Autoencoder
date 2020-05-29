@@ -1,0 +1,122 @@
+
+> FLAGS <- flags(flag_numeric("filters_nb_start", 32), 
++     flag_numeric("pooling_size", 2))
+
+> train_datagen <- image_data_generator(rescale = 1/255)
+
+> train_generator <- flow_images_from_directory(train_dir, 
++     train_datagen, color_mode = "grayscale", target_size = c(64, 
++         64), batch_s .... [TRUNCATED] 
+
+> validation_datagen <- image_data_generator(rescale = 1/255)
+
+> validation_generator <- flow_images_from_directory(validation_dir, 
++     validation_datagen, color_mode = "grayscale", target_size = c(64, 
++       .... [TRUNCATED] 
+
+> model_enc <- keras_model_sequential()
+
+> model_enc %>% layer_conv_2d(filters = FLAGS$filters_nb_start, 
++     kernel_size = c(2, 2), padding = "same", activation = "relu", 
++     input_shap .... [TRUNCATED] 
+
+> model_dec <- keras_model_sequential()
+
+> model_dec %>% layer_conv_2d(filters = FLAGS$filters_nb_start/2, 
++     kernel_size = c(3, 3), activation = "relu", padding = "same", 
++     input_sh .... [TRUNCATED] 
+
+> summary(model_dec)
+Model: "sequential_10"
+________________________________________________________________________________
+Layer (type)                        Output Shape                    Param #     
+================================================================================
+conv2d_22 (Conv2D)                  (None, 4, 4, 32)                9248        
+________________________________________________________________________________
+up_sampling2d_3 (UpSampling2D)      (None, 8, 8, 32)                0           
+________________________________________________________________________________
+conv2d_23 (Conv2D)                  (None, 8, 8, 64)                18496       
+________________________________________________________________________________
+up_sampling2d_4 (UpSampling2D)      (None, 16, 16, 64)              0           
+________________________________________________________________________________
+conv2d_24 (Conv2D)                  (None, 16, 16, 64)              36928       
+________________________________________________________________________________
+up_sampling2d_5 (UpSampling2D)      (None, 64, 64, 64)              0           
+________________________________________________________________________________
+conv2d_25 (Conv2D)                  (None, 64, 64, 1)               65          
+================================================================================
+Total params: 64,737
+Trainable params: 64,737
+Non-trainable params: 0
+________________________________________________________________________________
+
+> model_auto <- keras_model_sequential()
+
+> model_auto %>% model_enc %>% model_dec
+Model
+Model: "sequential_11"
+________________________________________________________________________________
+Layer (type)                        Output Shape                    Param #     
+================================================================================
+sequential_9 (Sequential)           (None, 4, 4, 32)                24992       
+________________________________________________________________________________
+sequential_10 (Sequential)          (None, 64, 64, 1)               64737       
+================================================================================
+Total params: 89,729
+Trainable params: 89,729
+Non-trainable params: 0
+________________________________________________________________________________
+
+
+
+> b_size <- 50
+
+> set.seed(42)
+
+> tensorflow::tf$random$set_seed(42)
+
+> model_auto %>% compile(loss = "mean_squared_error", 
++     optimizer = "adam", metrics = c("mean_squared_error"))
+
+> history_auto <- model_auto %>% fit_generator(train_generator, 
++     steps_per_epoch = 500/b_size, epochs = 5, validation_data = validation_generato .... [TRUNCATED] 
+
+> model_auto %>% save_model_hdf5("auto_model.h5")
+
+> train_datagen <- image_data_generator(rescale = 1/255)
+
+> train_generator <- flow_images_from_directory(train_dir, 
++     train_datagen, color_mode = "grayscale", target_size = c(64, 
++         64), batch_s .... [TRUNCATED] 
+
+> test_datagen <- image_data_generator(rescale = 1/255)
+
+> test_generator <- flow_images_from_directory(test_dir, 
++     test_datagen, color_mode = "grayscale", target_size = c(64, 
++         64), batch_size .... [TRUNCATED] 
+
+> predict_enc_train <- model_enc %>% predict_generator(train_generator, 
++     steps = 500/b_size)
+
+> dim(predict_enc_train)
+[1] 500   4   4  32
+
+> predict_enc_test <- model_enc %>% predict_generator(test_generator, 
++     steps = 100/b_size)
+
+> dim(predict_enc_test)
+[1] 100   4   4  32
+
+> dim(predict_enc_train) <- c(nrow(predict_enc_train), 
++     prod(dim(predict_enc_train)[-1]))
+
+> dim(predict_enc_test) <- c(nrow(predict_enc_test), 
++     prod(dim(predict_enc_test)[-1]))
+
+> y_radio_train <- train_generator$classes
+
+> y_radio_test <- test_generator$classes
+
+> save(predict_enc_train, y_radio_train, predict_enc_test, 
++     y_radio_train, file = paste0("Conv_Encod_Flat_filter", FLAGS$filters_nb_start, 
++    .... [TRUNCATED] 

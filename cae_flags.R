@@ -131,7 +131,7 @@ dim(predict_enc_test) <- c(nrow(predict_enc_test),prod(dim(predict_enc_test)[-1]
 # Flatten array 
 y_radio_train <- train_generator$classes
 y_radio_test <- test_generator$classes
-save(predict_enc_train,y_radio_train,predict_enc_test, y_radio_train, file=paste0("Conv_Encod_Flat_filter",
+save(predict_enc_train,y_radio_train,predict_enc_test, y_radio_train,y_radio_test, file=paste0("Conv_Encod_Flat_filter",
                                                                                   FLAGS$filters_nb_start,
                                                                                   "_pool",FLAGS$pooling_size,
                                                                                   ".RData"))

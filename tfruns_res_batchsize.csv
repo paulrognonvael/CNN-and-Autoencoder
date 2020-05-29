@@ -1,5 +1,5 @@
 run_dir,metric_loss,metric_acc,metric_val_loss,metric_val_acc,flag_batch_size,samples,epochs,epochs_completed,metrics,model,loss_function,optimizer,learning_rate,script,start,end,completed,output,source_code,context,type
-runs/2020-05-26T20-47-04Z,0.5201,0.7618,0.555,0.7533,50,11,13,13,runs/2020-05-26T20-47-04Z/tfruns.d/metrics.json,"Model
+runs/2020-05-29T21-30-06Z,0.5085,0.7727,0.5342,0.76,50,11,13,13,runs/2020-05-29T21-30-06Z/tfruns.d/metrics.json,"Model
 Model: ""sequential_3""
 ________________________________________________________________________________
 Layer (type)                        Output Shape                    Param #     
@@ -27,7 +27,7 @@ Trainable params: 816,673
 Non-trainable params: 0
 ________________________________________________________________________________
 
-",binary_crossentropy,<tensorflow.python.keras.optimizer_v2.rmsprop.RMSprop>,9.99999974737875e-5,cnn_flags.r,2020-05-26T20:47:04Z,2020-05-26T20:48:48Z,TRUE,"
+",binary_crossentropy,<tensorflow.python.keras.optimizer_v2.rmsprop.RMSprop>,9.99999974737875e-5,cnn_flags.r,2020-05-29T21:30:07Z,2020-05-29T21:31:49Z,TRUE,"
 > set.seed(43)
 
 > tensorflow::tf$random$set_seed(43)
@@ -62,8 +62,8 @@ ________________________________________________________________________________
 
 > str(batch)
 List of 2
- $ : num [1:50, 1:64, 1:64, 1] 0.1412 0.3137 0.0353 0 0.0275 ...
- $ : num [1:50(1d)] 0 1 1 1 0 0 1 1 1 1 ...
+ $ : num [1:50, 1:64, 1:64, 1] 0.01961 0.00784 0.01569 0.69412 0.65098 ...
+ $ : num [1:50(1d)] 1 0 0 0 1 0 1 1 0 1 ...
 
 > model <- keras_model_sequential() %>% layer_conv_2d(filters = 32, 
 +     kernel_size = c(3, 3), activation = ""relu"", input_shape = c(64, 
@@ -102,8 +102,8 @@ ________________________________________________________________________________
 
 > history <- model %>% fit_generator(train_generator, 
 +     steps_per_epoch = round(500/FLAGS$batch_size) + 1, epochs = 13, 
-+     validation_data =  .... [TRUNCATED] ",runs/2020-05-26T20-47-04Z/tfruns.d/source.tar.gz,local,training
-runs/2020-05-26T20-45-30Z,0.5066,0.756,0.5565,0.7259,35,15,13,13,runs/2020-05-26T20-45-30Z/tfruns.d/metrics.json,"Model
++     validation_data =  .... [TRUNCATED] ",runs/2020-05-29T21-30-06Z/tfruns.d/source.tar.gz,local,training
+runs/2020-05-29T21-28-33Z,0.4877,0.772,0.5271,0.7556,35,15,13,13,runs/2020-05-29T21-28-33Z/tfruns.d/metrics.json,"Model
 Model: ""sequential_2""
 ________________________________________________________________________________
 Layer (type)                        Output Shape                    Param #     
@@ -131,7 +131,7 @@ Trainable params: 816,673
 Non-trainable params: 0
 ________________________________________________________________________________
 
-",binary_crossentropy,<tensorflow.python.keras.optimizer_v2.rmsprop.RMSprop>,9.99999974737875e-5,cnn_flags.r,2020-05-26T20:45:30Z,2020-05-26T20:47:04Z,TRUE,"
+",binary_crossentropy,<tensorflow.python.keras.optimizer_v2.rmsprop.RMSprop>,9.99999974737875e-5,cnn_flags.r,2020-05-29T21:28:33Z,2020-05-29T21:30:06Z,TRUE,"
 > set.seed(43)
 
 > tensorflow::tf$random$set_seed(43)
@@ -166,8 +166,8 @@ ________________________________________________________________________________
 
 > str(batch)
 List of 2
- $ : num [1:35, 1:64, 1:64, 1] 0.00392 0 0 0.13725 0.28235 ...
- $ : num [1:35(1d)] 0 1 1 1 0 1 0 0 0 0 ...
+ $ : num [1:35, 1:64, 1:64, 1] 0.56078 0.00392 0.03922 0.07843 0 ...
+ $ : num [1:35(1d)] 1 0 0 1 0 1 1 0 1 0 ...
 
 > model <- keras_model_sequential() %>% layer_conv_2d(filters = 32, 
 +     kernel_size = c(3, 3), activation = ""relu"", input_shape = c(64, 
@@ -206,8 +206,8 @@ ________________________________________________________________________________
 
 > history <- model %>% fit_generator(train_generator, 
 +     steps_per_epoch = round(500/FLAGS$batch_size) + 1, epochs = 13, 
-+     validation_data =  .... [TRUNCATED] ",runs/2020-05-26T20-45-30Z/tfruns.d/source.tar.gz,local,training
-runs/2020-05-26T20-43-50Z,0.475,0.779,0.5673,0.72,25,21,13,13,runs/2020-05-26T20-43-50Z/tfruns.d/metrics.json,"Model
++     validation_data =  .... [TRUNCATED] ",runs/2020-05-29T21-28-33Z/tfruns.d/source.tar.gz,local,training
+runs/2020-05-29T21-26-54Z,0.518,0.741,0.5747,0.72,25,21,13,13,runs/2020-05-29T21-26-54Z/tfruns.d/metrics.json,"Model
 Model: ""sequential_1""
 ________________________________________________________________________________
 Layer (type)                        Output Shape                    Param #     
@@ -235,7 +235,7 @@ Trainable params: 816,673
 Non-trainable params: 0
 ________________________________________________________________________________
 
-",binary_crossentropy,<tensorflow.python.keras.optimizer_v2.rmsprop.RMSprop>,9.99999974737875e-5,cnn_flags.r,2020-05-26T20:43:50Z,2020-05-26T20:45:30Z,TRUE,"
+",binary_crossentropy,<tensorflow.python.keras.optimizer_v2.rmsprop.RMSprop>,9.99999974737875e-5,cnn_flags.r,2020-05-29T21:26:54Z,2020-05-29T21:28:33Z,TRUE,"
 > set.seed(43)
 
 > tensorflow::tf$random$set_seed(43)
@@ -270,8 +270,8 @@ ________________________________________________________________________________
 
 > str(batch)
 List of 2
- $ : num [1:25, 1:64, 1:64, 1] 0.0863 0.0824 0.0235 0 0.0471 ...
- $ : num [1:25(1d)] 1 0 0 1 0 0 0 1 1 1 ...
+ $ : num [1:25, 1:64, 1:64, 1] 0 0.0588 0.0706 0.0235 0 ...
+ $ : num [1:25(1d)] 0 1 1 1 1 1 0 0 0 1 ...
 
 > model <- keras_model_sequential() %>% layer_conv_2d(filters = 32, 
 +     kernel_size = c(3, 3), activation = ""relu"", input_shape = c(64, 
@@ -310,4 +310,4 @@ ________________________________________________________________________________
 
 > history <- model %>% fit_generator(train_generator, 
 +     steps_per_epoch = round(500/FLAGS$batch_size) + 1, epochs = 13, 
-+     validation_data =  .... [TRUNCATED] ",runs/2020-05-26T20-43-50Z/tfruns.d/source.tar.gz,local,training
++     validation_data =  .... [TRUNCATED] ",runs/2020-05-29T21-26-54Z/tfruns.d/source.tar.gz,local,training

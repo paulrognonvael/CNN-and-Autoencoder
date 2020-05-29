@@ -3,14 +3,14 @@ title: "Task 2 Statistical Learning 2020"
 author: "Group 3"
 date: '`r format(Sys.Date(),"%B %eth, %Y")`'
 output:
-  # pdf_document:
-  #   number_sections: yes
-  #   toc: yes
-  #   includes:
-  #     in_header: my_header.tex
-  html_document:
-    df_print: paged
+  pdf_document:
+    number_sections: yes
     toc: yes
+    includes:
+      in_header: my_header.tex
+  # html_document:
+  #   df_print: paged
+  #   toc: yes
 editor_options: 
   chunk_output_type: console
 ---
@@ -47,14 +47,14 @@ load("data_q1to8.RData")
 
 # Question 1&2 
 
-***Normalize images. Split the dataset into 500 train /100 validation /100 test. Try to balance the two classes.***
+***Normalize the images. Split the dataset into 500 training /100 validation /100 test. Try to balance the two classes.***
 
-We create a function `random_files` to automatically split the data in the required folder structure or depending on the user requirements.
+We create a function `random_files` to automatically split the data in the required folder structure and in training, validation and test sets.
 
 ```{r}
 random_files <- function(readpath, writepath, type, train_size, val_size, test_size, pattern = "png$|PNG$"){
 ####################################################################
-# readpath and writepath = path to folders with files to select and where to write them                                
+# readpath and writepath = path to folders with files to select and where to write them                     
 #                                                                            
 # train_size, val_size, test_size = percentage or number of recordings to select. If value is 
 #   between 0 and 1 percentage of files is assumed, if value greater than 1, 
@@ -188,7 +188,7 @@ validation_dir<-"rxtorax/validation"
 test_dir<-"rxtorax/test"
 ```
 
-We then use `image_data_generator` to normalize our data and `flow_images_from_directory` to define batches, resize our images and keep an unique channel. We start with a batch size of 25.
+We then use `image_data_generator` to normalize our data and `flow_images_from_directory` to define batches, resize our images and keep a unique channel. We start with a batch size of 25.
 
 ```{r,echo=TRUE}
 b_size <- 25
@@ -232,7 +232,7 @@ test_generator <- flow_images_from_directory(
 
 ***Implement a Convolutional Neural Network (CNN).***
 
-We then define a Convolutional Neural Network, with 2 convolution layers, each with a pooling layer. Then we add a flatten layer and a dropout layer. At the bottom of the network we have two fully connected layers with 128 and 32 nodes respectively. Finally, the output layer has one unit and a sigmoid activation function. The total number of trainable parameters is 816 673. 
+We then define a Convolutional Neural Network, with 2 convolution layers, each with its own pooling layer. Then we add a flatten layer and a dropout layer. At the bottom of the network we have two fully connected layers with 128 and 32 nodes respectively. Finally, the output layer has one unit and a sigmoid activation function. The total number of trainable parameters is 816 673. 
  
 ```{r,eval=TRUE,echo=TRUE}
 model <- keras_model_sequential() %>%
@@ -275,22 +275,15 @@ history <- model %>% fit_generator(
 model %>% save_model_hdf5("cnn_model_batch25.h5")
 ```
 
-```{r}
-png("cnn1_plot.png")
-plot(history)
-dev.off()
-```
-
 We obtain the following loss and accuracy values across epochs on the training and validation sets. We see the training and validation values stagnate and coincide after the 10th epoch. More than 13 epochs led to overfitting.
 
 ```{r,eval=TRUE,fig.cap="\\label{fig:fig1} CNN accuracy on training and validation set",out.extra = "", fig.pos = 'h!', fig.align="center"}
-
 plot(history)
 ```
 
 # Question 4
 
-***Tune the hyperparameter batch_size checking the values in the set 25,35,50.***
+***Tune the hyperparameter batch_size checking the values 25, 35, 50.***
 
 We use `tfruns` to tune the batch size hyperparameter.
 
@@ -308,7 +301,7 @@ tfruns_res_batchsize <- read_csv("tfruns_res_batchsize.csv")
 best_batch <- tfruns_res_batchsize$flag_batch_size[which.max(tfruns_res_batchsize$metric_val_acc)]
 ```
 
-In Table \ref{tab:tab1}, we present the output of the tuning. We find a batch size of `r best_batch` gives the best loss and accuracy values.
+In Table \ref{tab:tab1}, we present the output of the tuning. The loss and accuracy values are very close to each other, the differences are probably not significant. We find a batch size of `r best_batch` gives the best accuracy value on the validation set so we set our batch size at `r best_batch`, refit our model with that size and save our tuned model in the attached file `cnn_model_bestbatch.h5`.
 
 ```{r,eval=TRUE}
 tfruns_res_batchsize %>% select(c(6,2,3,4,5)) %>% kable(
@@ -318,8 +311,6 @@ tfruns_res_batchsize %>% select(c(6,2,3,4,5)) %>% kable(
   caption = "\\label{tab:tab1} Batch size tuning results - loss and accuracy"
 )
 ```
-
-We set our batch size at `r best_batch`, refit our model with that size and save our tuned model in the attached file `cnn_model_bestbatch.h5`.
 
 ```{r,echo =TRUE}
 set.seed(43)
@@ -374,13 +365,13 @@ predict <- model_bestbatch %>% predict_generator(
   test_generator,
   steps = 100/b_size)
 
-stat_df <- as_tibble(cbind(predict[1:100,], test_generator$filenames, test_generator$classes)) %>%
+stat_df <- tibble(predict[1:100,], test_generator$filenames, test_generator$classes)
   # assign prediction probability for filenames
-  rename(
-    predict_proba = V1,
-    filename = V2,
-    class = V3
-  ) %>%
+colnames(stat_df) <- c(
+    "predict_proba",
+    "filename",
+    "class") 
+stat_df <- stat_df %>%
   mutate(predict_proba = as.double(predict_proba)) %>%
            mutate(predicted_class = ifelse(predict_proba > 0.5, 1, 0)) %>%
            mutate(predicted_class = as.integer(predicted_class)) %>% 
@@ -390,7 +381,7 @@ test_accuracy <- mean(stat_df$class==stat_df$predicted_class)
 
 ```
 
-We obtain an accuracy of `r round(test_accuracy,2)` on the test set. The confusion matrix is:
+We obtain an accuracy of 0.78 on the test set. The confusion matrix is:
 
 ```{r,eval =TRUE}
 confusionMatrix(as.factor(stat_df$predicted_class),as.factor(stat_df$class))
@@ -426,6 +417,28 @@ train_generator <- flow_images_from_directory(
   target_size = c(64, 64),
   batch_size = b_size,
   class_mode = "binary"
+)
+
+validation_datagen <- image_data_generator(rescale = 1/255)
+validation_generator <- flow_images_from_directory(
+  validation_dir,
+  validation_datagen,
+  color_mode = "grayscale",
+  target_size = c(64, 64),
+  batch_size = b_size,
+  class_mode = "binary"
+)
+
+test_datagen <- image_data_generator(rescale = 1/255)
+test_generator <- flow_images_from_directory(
+  test_dir,
+  test_datagen,
+  color_mode = "grayscale",
+  target_size = c(64, 64),
+  batch_size = b_size,
+  class_mode = "binary",
+  classes = c("effusion","normal"),
+  shuffle = FALSE
 )
 
 # initialise the model
@@ -468,13 +481,13 @@ predict_bestbatch_aug <- model_bestbatch_aug %>% predict_generator(
   test_generator,
   steps = 100/b_size)
 
-stat_df_bestbatch_aug <- as_tibble(cbind(predict_bestbatch_aug, test_generator$filenames, test_generator$classes)) %>%
+stat_df_bestbatch_aug <- tibble(predict_bestbatch_aug, test_generator$filenames, test_generator$classes)
   # assign prediction probability for filenames
-  rename(
-    predict_proba = V1,
-    filename = V2,
-    class = V3
-  ) %>%
+colnames(stat_df_bestbatch_aug) <- c(
+    "predict_proba",
+    "filename",
+    "class") 
+stat_df_bestbatch_aug <- stat_df_bestbatch_aug %>%
   mutate(predict_proba = as.double(predict_proba)) %>%
            mutate(predicted_class = ifelse(predict_proba > 0.5, 1, 0)) %>%
            mutate(predicted_class = as.integer(predicted_class)) %>% 
@@ -483,7 +496,7 @@ stat_df_bestbatch_aug <- as_tibble(cbind(predict_bestbatch_aug, test_generator$f
 test_accuracy <- mean(stat_df_bestbatch_aug$class==stat_df_bestbatch_aug$predicted_class)
 ```
 
-We compare the loss and accuracy on the training and validation sets before and after augmentation in Fig. \ref{fig:fig2}. We see that the validation accuracy stagnates from epoch 8 in both cases, but the level reached before augmentation was higher than the level reached after augmentation: about 71% against 67%.
+We compare the loss and accuracy on the training and validation sets before and after augmentation in Fig. \ref{fig:fig2}. We see that the validation loss and accuracy metrics stagnate from epoch 10 in both cases eventhough the validation accuracy shows some variance after augmentation. The accuracy level reached before augmentation was higher than the level reached after augmentation: about 71% against 67%.
 
 ```{r,eval=TRUE,fig.cap="\\label{fig:fig2} CNN loss and accuracy on training and validation set before and after augmentation",out.extra = "", fig.pos = 'h!', fig.align="center"}
 p<-plot(history_bestbatch) + theme(legend.position = "bottom") + ggtitle("Before augmentation")
@@ -497,7 +510,7 @@ We also compare the two models on the test sample. For the CNN after augmentatio
 confusionMatrix(as.factor(stat_df_bestbatch_aug$predicted_class),as.factor(stat_df_bestbatch_aug$class))
 ```
 
-The accuracy on the test set was slightly higher for the model before augmentation at 0.74. We note however that the two values are very close to each other. They each belong to the 95% confidence interval of the other. The Kappa measures are close to each other as well. Overall, the augmentation did not improve the model. 
+The accuracy on the test set was slightly higher for the model before augmentation at 0.78. We note however that the two values are very close to each other. They each belong to the 95% confidence interval of the other. The Kappa measures are close to each other as well. Overall, the augmentation did not improve the model. 
 
 ```{r}
 save.image("data_q1to6.RData")
@@ -706,7 +719,7 @@ resamps <- resamples(list(
 ))
 ```
 
-We compare the accuracy obtained with the different dimensions in the training set in Fig.\ref{fig:fig4} where we plot the distributions of the ROC, Specificity and Sensitivity accross resamples. We see that in all the cases the ROC is poor, however a slightly larger ROC is achieved with the dimension (4,4,64). The sensitivity and specificity are comparable in the 3 cases.
+We compare the accuracy obtained with the different dimensions in the training set in Fig.\ref{fig:fig4} where we plot the distributions of the ROC, Specificity and Sensitivity accross resamples. We see that in all the cases the ROC is poor, on average the dimensions (4,4,64) abd (8,8,64) have larger ROC tha (4,4,32) but the boxplots between the three are not well separated. The sensitivity and specificity are comparable in the 3 cases.
 
 ```{r,eval=TRUE,fig.cap="\\label{fig:fig4} Adaboost model accuracy with different dimensions of compact layer Z",out.extra = "", fig.pos = 'h!', fig.align="center"}
 theme1 <- trellis.par.get()
@@ -762,16 +775,16 @@ On the test set with dimension (8,8,64) we obtain the following confusion matrix
 confusionMatrix(data = pred_128_2, reference = test$y)
 ```
 
-On the test set, models with dimensions (4,4,64) and (8,8,64) have very similar accuracy, however the ROC is larger for (8,8,64). We choose (8,8,64) as our best dimension.
+On the test set, all performance metrics are similar and accuracies 95% confidence intervals overlap. However, (8,8,64) has the largest accuracy and also the largest ROC. We choose (8,8,64) as our best dimension.
 
 
 # Question 10
 
-***Once it was selected the best performing z layer configuration, to detect in which variables (nodes) there are significant differences between the two classes of images, a statistical test will be performed to determine those that are significant.***
+***Once the best performing z layer configuration has bee selected, perform a statistcal test to detect in which variables (nodes) there are significant differences between the two classes of images.***
 
 We extract again the compact layer for the training set with dimension (8,8,64). For each variable, we run a t-test comparing the average value between the samples from the two classes and adjust for false discovery ratio with the Benjamini-Hochberg method.
 
-```{r,eval=TRUE}
+```{r,echo=TRUE,eval=TRUE}
 load("Conv_Encod_Flat_filter128_pool2.RData")
 training <- data.frame(y=as.factor(y_radio_train),predict_enc_train)
 nzv <- nearZeroVar(training)
@@ -807,9 +820,9 @@ write_csv(stat.test %>% filter(p<0.05)%>% arrange(p),"var_sign_dif_mean.csv")
 
 # Question 11
 
-***Visualize the results of the previous item using Volcano plot.***
+***Visualize the results of the previous item using a Volcano plot.***
 
-We compute the log fold change ($\log_2$) between the two classes and plot the variabes p-values in a log10 scale against the log fold change in Fig.\ref{fig:fig5}. The volcano plot shows a group of variables has significant p-values but among those very little have a large fold change: only one variable has a log fold change larger than 1 in absolute value. A lot of our significant unajusted p-values might actually highlight very small changes in means. This volcano plot tells us that our variables have little difference betweenn the two classes, which is in line with the fact thay we find they have little classification power.
+We compute the log fold change ($\log_2$) between the two classes and plot the variabes p-values in a log10 scale against the log fold change in Fig.\ref{fig:fig5}. The volcano plot shows a group of variables has significant p-values but among those very little have a large fold change: only three variables have a log fold change larger than 1 in absolute value. A lot of our significant unajusted p-values might actually highlight very small changes in means. This volcano plot tells us that overall our variables have little difference betweenn the two classes, which is in line with the fact thay we find they have little classification power.
 
 ```{r,echo=TRUE,eval=TRUE}
 stat.test <- stat.test %>% ungroup() %>% arrange(variables)
@@ -832,4 +845,11 @@ ggplot(stat.test)+geom_point(aes(x=lfc,y=log10pval)) +
   geom_hline(yintercept = -log10(0.05), col = "red", lty = 2)
 ```
 
+# Question 12
+
+CNNs are mostly used for processing images. The input can generally be 3 channels (for color images) or 1 channel (for grayscale images). The 1 or 3 channels form the volume of the input image (using 2D matrixes for each channel) and is reflected in the layers of the network. The network uses filters in its layers to find patterns and one can use different lens’ sizes (3x3, 5x5, etc, generally odd numbers). Another important element of this type networks if the pooling layer, which is a sort of non-linear down-sampling layer. The network allows for network reconfiguration in each training epoch in order to improve accuracy and contribute to gradient calculation speed. On the output side of the CNN, after all convolutions are concluded, output is generated via a fully connected dense layer.
+
+CAEs consist of two CNNs connected back to back, where one is referred to as the encoder (input network) and the other decoder (output network). The task of the encoder is to produce a data representation of the input data in a lower dimensional space (occupying less bytes) using a non-linear transformation. The task of the decoder is to re-interpret the encoded information and produce a result that attempts to resemble the original / input information, with as less possible loss of data as possible. Generally this is used also for images. The benefit of having two networks work separately is that, eventually, when all the information has been encoded, the two networks can be disconnected and use a different approach in place of the decoder.
+
+In this work, the CNN classification has proved to be much more accurate than the classification based on the compact layer output by the encoder. Such results must be considered carefully given the limitations of our models and tuning process. Our CNN has much more parameters than our CAE which was limited by design. We also experienced a lot of variance in performance metrics on validation and test sets which complicated the tuning of hyperparameters. With more samples, more time in our hands and more computing power to perform a extensive grid search with good estimates of performance metrics, but also more experience, the results would have been certainly different. A lesson learned here is that given the difficulties in training a good netwrok, relying on pre-trained neural networks as base structure is a very reasonable option when training ressources (time, computing power, samples) are scarce. 
 

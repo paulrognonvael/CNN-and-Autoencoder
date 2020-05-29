@@ -1,0 +1,16 @@
+Descriptive of files:
+
+CAE_output_per_dimension: folder of RData files with Z compact layer values for the training sample for each dimension considered in our work.
+
+csv_output: folder of miscellaneous results saved in CSV files: performance metrics for CNN batch size tuning, performance metrics for CAE Z compact layer dimensions, T test results for the significance of class difference in means for Z variables, list of variables with significant difference in mean between classes.
+
+data_q1to8: Rdata file of save objects used to run the R markdown file
+
+h5_neuralnets: folder of h5 files of trained CAE and CNN (initial batch size, best batch size and augmented).
+
+Rmd_R_code: folder of R mardokdown script for the reports, R scripts of flagged CNN and CAE models for tfruns.
+
+stump_adaboost_outputs: folder of R data files output by the fitting of the adaboost model of z compact layer value for the classification of images.
+
+tfruns_CNNbatchsize_CAEdimensions: folder of tfruns outputs from the tuning of the CNN batch size and CAE dimension.
+
